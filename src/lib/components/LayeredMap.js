@@ -3,11 +3,11 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import 'leaflet/dist/leaflet.css';
 import {CRS} from 'leaflet';
-import { LayersControl, Map, ScaleControl } from 'react-leaflet'
+import { LayersControl, Map, ScaleControl, FeatureGroup } from 'react-leaflet'
 import Colormap from '../private_components/layered-map-resources/Colormap.react'
 import Switch from '../private_components/layered-map-resources/Switch.react'
 import CompositeMapLayer from '../private_components/layered-map-resources/CompositeMapLayer.react'
-
+import DrawControls from '../private_components/layered-map-resources/DrawControls.react'
 const { BaseLayer, Overlay } = LayersControl
 const yx = ([x,y]) => {return [y, x]}
 
@@ -53,6 +53,11 @@ class LayeredMap extends Component {
                         ))}
                     </LayersControl>
                     <Colormap position='bottomleft' />
+                    <FeatureGroup>
+                        <DrawControls
+                            lineCoords={(coords) => this.props.setProps({'line_points':coords})}
+                            markerCoords={(coords) => this.props.setProps({'marker_point':coords})} />
+                    </FeatureGroup>
                 </Map>
         );
     }
@@ -80,7 +85,13 @@ LayeredMap.propTypes = {
      * The map bounds of the input data, given as [[xmin, ymin], [xmax, ymax]] (in physical coordinates).
      */
     map_bounds: PropTypes.array,
-
+    line_points: PropTypes.array,
+    marker_points: PropTypes.array,
+    /**
+    * Dash-assigned callback that should be called whenever any of the
+    * properties change
+    */
+   setProps: PropTypes.func,
     /**
      * An array of different layers. Each layer is a dictionary with the following structure:
           {
