@@ -35,7 +35,7 @@ class LayeredMap extends Component {
                      ref={this.mapRef}
                      center={yx(this.props.center)}
                      zoom={-3}
-                     minZoom={-5}
+                     minZoom={-10}
                      attributionControl={false}
                      crs={CRS.Simple}>
                     <ScaleControl position='bottomright' imperial={false} metric={true} />

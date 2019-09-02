@@ -19,12 +19,27 @@ class DrawControls extends Component {
 
   _onEdited = (e) => {
 
-    let numEdited = 0;
     e.layers.eachLayer( (layer) => {
-      numEdited += 1;
-    });
+          const coords = layer._latlngs.map(p => {
+            return [p.lat, p.lng]
+        })
+        this.props.lineCoords(coords)
+    })
   }
 
+  deleteAllLayers() {
+  
+      var {edit} = this.refs;
+      var layerContainer = edit.leafletElement.options.edit.featureGroup
+      var layers = layerContainer._layers
+      var layer_ids = Object.keys(layers)
+      let layer
+      for (var i = 0; i < layer_ids.length-1; i++) {
+          layer = layers[layer_ids[i]]._leaflet_id
+          layerContainer.removeLayer(layer);
+        }
+  }
+  
   _onCreated = (e) => {
     let type = e.layerType;
     let layer = e.layer;
@@ -36,6 +51,7 @@ class DrawControls extends Component {
             return [p.lat, p.lng]
         })
         this.props.lineCoords(coords)
+        this.deleteAllLayers()
     }
   }
 
@@ -68,9 +84,11 @@ class DrawControls extends Component {
     console.log('_onDeleteStop', e);
   }
 
+
   render() {
     return (
             <EditControl
+              ref={"edit"}
               position='topright'
               onEdited={this._onEdited}
               onCreated={this._onCreated}
