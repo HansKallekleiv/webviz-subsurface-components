@@ -4,13 +4,14 @@ import HistoryMatchDemo from './HistoryMatchDemo';
 import MorrisDemo from './MorrisDemo';
 import SubsurfaceMapDemo from './SubsurfaceMapDemo';
 import LayeredMapDemo from './LayeredMapDemo';
+import SurfaceSelectorDemo from './SurfaceSelectorDemo';
 
 
 class App extends Component {
 
     constructor(props) {
         super(props)
-        this.state = {value:'LayeredMap'}
+        this.state = {value:'SurfaceSelector'}
     }
 
     onChange(e) {
@@ -31,6 +32,9 @@ class App extends Component {
             case "LayeredMap": { 
                 return <LayeredMapDemo/>
             }
+            case "SurfaceSelector": { 
+                return <SurfaceSelectorDemo/>
+            }
             default: { 
                 return null           
             } 
@@ -45,6 +49,7 @@ class App extends Component {
                     <option value="Morris">Morris</option>
                     <option value="SubsurfaceMap">SubsurfaceMap</option>
                     <option value="LayeredMap">LayeredMap</option>
+                    <option value="SurfaceSelector">SurfaceSelector</option>
                 </select>
                 {this.renderDemo()}
             </div>
