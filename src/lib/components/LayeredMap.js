@@ -32,7 +32,9 @@ class LayeredMap extends Component {
             draw_toolbar_polygon,
             draw_toolbar_polyline,
             setProps,
+            setViewport
         } = this.props;
+
         const showDrawControls =
             draw_toolbar_marker || draw_toolbar_polygon || draw_toolbar_polyline
                 ? true
@@ -51,6 +53,8 @@ class LayeredMap extends Component {
                 minZoom={-5}
                 attributionControl={false}
                 crs={CRS.Simple}
+                onViewportChanged={viewport => setViewport(viewport)}
+                viewport={this.props.viewport}
             >
                 {this.props.showScaleY && (
                     <VerticalZoom
@@ -162,6 +166,8 @@ LayeredMap.propTypes = {
      * The map bounds of the input data, given as [[xmin, ymin], [xmax, ymax]] (in physical coordinates).
      */
     map_bounds: PropTypes.array,
+    viewport: PropTypes.object,
+    setViewport: PropTypes.func,
 
     /**
      * The initial scale of the y axis (relative to the x axis).
