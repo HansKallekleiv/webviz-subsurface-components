@@ -81,13 +81,13 @@ class DeckGLMapController:
         patch_resources = {"wellData": data}
         self._resources.update(patch_resources)
 
-    def update_colormap(self, colormap):
+    def update_colormap(self, colormap="viridis_r"):
         layer_idx = self._layer_idx_from_id(self.COLORMAP_ID)
-        self._spec["layers"][layer_idx]["colormap"] = colormap
+        self._spec["layers"][layer_idx]["colormap"] = f"/colormaps/{colormap}.png"
 
     def update_colormap_range(self, value_range):
         layer_idx = self._layer_idx_from_id(self.COLORMAP_ID)
-        self._spec["layers"][layer_idx]["valueRange"] = value_range
+        self._spec["layers"][layer_idx]["colorMapRange"] = value_range
 
     def update_pie_data(self, pie_data: Dict[str, List[Dict]]):
         layer_idx = self._layer_idx_from_id(self.PIE_ID)
