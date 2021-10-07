@@ -81,7 +81,7 @@ class DeckGLMapViewer(DeckGLMap):
     def _resources_spec(self):
         return {
             # pylint: disable=line-too-long
-            "mapImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==",
+            "mapImage": "/image/dummy.png",
             "mapBounds": [0, 1, 0, 1],
             "mapRange": [0, 1],
             "mapTarget": [0.5, 0.5, 0],
@@ -94,7 +94,7 @@ class DeckGLMapViewer(DeckGLMap):
         return {
             "@@type": "ColormapLayer",
             # pylint: disable=line-too-long
-            "colormap": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAAKCAYAAABbnoC0AAAAZUlEQVR42u3UKQ6AMBQA0el2O+5/mS4gEBhUQbXzkp9uom4CHCck7ok8+z3uQkjkDClBKZDz+6z6HhnQ2vepFXqfP//x98Q6YOuJSNqWAZAMgCQDIMkASDIAkgyAJAMgyQBIWscF7qDAkoQMApEAAAAASUVORK5CYII=",
+            "colormap": "/colormaps/viridis_r.png",
             "id": "colormap-layer",
             "pickable": True,
             "image": "@@#resources.mapImage",

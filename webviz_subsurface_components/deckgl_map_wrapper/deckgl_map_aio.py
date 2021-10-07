@@ -1,3 +1,4 @@
+from webviz_subsurface_components.WellLogViewer import WellLogViewer
 from dash import (
     html,
     dcc,
@@ -9,7 +10,11 @@ from dash import (
     callback_context,
     no_update,
 )
+
+from webviz_config.webviz_assets import WEBVIZ_ASSETS, WebvizAssets
 from . import DeckGLMapViewer, DeckGLMapController
+
+from flask import send_from_directory
 
 
 class DeckGLMapAIO(html.Div):
@@ -44,10 +49,12 @@ class DeckGLMapAIO(html.Div):
 
     def __init__(
         self,
+        app,
         aio_id,
     ):
         """"""
-
+        assets = WebvizAssets()
+        assets.add(f"{aio_id}.property_map.png")
         super().__init__(
             [
                 dcc.Store(data=[], id=self.ids.colormap_image(aio_id)),
@@ -73,6 +80,10 @@ class DeckGLMapAIO(html.Div):
     )
     def _update_spec(colormap_image, colormap_range, current_spec, client_patch):
         """This should be moved to a clientside callback"""
+        print(current_spec)
+        from dash.exceptions import PreventUpdate
+
+        raise PreventUpdate
         ctx = callback_context.triggered[0]["prop_id"]
         map_controller = DeckGLMapController(current_spec, client_patch=client_patch)
         if ctx == "." or "colormap_image" in ctx:

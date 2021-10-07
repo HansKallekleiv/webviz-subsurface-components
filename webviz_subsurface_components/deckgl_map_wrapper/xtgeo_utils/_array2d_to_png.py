@@ -18,7 +18,7 @@ def array2d_to_png(z_array):
     The undefined values are set as having alpha = 0. The height values are
     shifted to start from 0.
     """
-
+    z_array = z_array.copy()
     shape = z_array.shape
 
     z_array = np.repeat(z_array, 4)  # This will flatten the array
@@ -37,13 +37,9 @@ def array2d_to_png(z_array):
     z_array = z_array.reshape((shape[0], shape[1], 4))
 
     image = Image.fromarray(np.uint8(z_array), "RGBA")
-
+    return image
     byte_io = io.BytesIO()
-    image.save(byte_io, format="png")
+    image.save("/tmp/test.png", format="png")
+
     byte_io.seek(0)
-
-    # image.save("debug_image.png")
-
-    base64_data = base64.b64encode(byte_io.read()).decode("ascii")
-
-    return f"data:image/png;base64,{base64_data}"
+    return byte_io

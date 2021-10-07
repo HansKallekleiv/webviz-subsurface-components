@@ -123,7 +123,7 @@ if __name__ == "__main__":
                 children=[
                     wcc.Frame(
                         style={"height": "90vh"},
-                        children=[wsc.DeckGLMapAIO(aio_id="mapview")],
+                        children=[wsc.DeckGLMapAIO(app=app, aio_id="mapview")],
                     )
                 ],
             ),
@@ -167,6 +167,15 @@ if __name__ == "__main__":
         ],
     )
 
+    {
+        "class": "FMUScratchSurfaceProvider",
+        "arguments": {
+            "ENSEMBLE": "iter-0",
+            "REAL": [1, 2, 3],
+            "id": "some_unique_id_representing_the_surface",
+        },
+    }
+
     @callback(
         Output(wsc.DeckGLMapAIO.ids.map("mapview"), "resources"),
         Input("surface-select", "value"),
@@ -176,13 +185,15 @@ if __name__ == "__main__":
     def _update_resources(surface_name, well_names, current_resources):
         """Handle resources (map and well data)"""
         ctx = callback_context.triggered[0]["prop_id"]
-
+        # aio = wsc.DeckGLMapAIO(aio_id="mapview")
+        # print(aio)
         if ctx == "." or "surface" in ctx:
             surface = SURFACES[surface_name]
             surface_data = wsc.XtgeoSurfaceArray(surface)
+            # surface_data.map_image.save(aio.propertymap_url)
             current_resources.update(
                 {
-                    "mapImage": surface_data.map_image,
+                    "mapImage": aio.propertymap_url,
                     "mapRange": [surface_data.min_val, surface_data.max_val],
                     "mapBounds": surface_data.map_bounds,
                     "mapTarget": surface_data.view_target,
