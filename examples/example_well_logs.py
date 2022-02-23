@@ -12,20 +12,28 @@ import dash_html_components as html
 import webviz_subsurface_components
 
 with open("./react/src/demo/example-data/L898MUD.json", encoding="utf8") as json_file:
-    logs = json.load(json_file)
+    LOGS = json.load(json_file)
 
 with open(
     "./react/src/demo/example-data/welllog_template_1.json", encoding="utf8"
 ) as json_file:
-    template = json.load(json_file)
+    TEMPLATE = json.load(json_file)
+
+with open(
+    "./react/src/demo/example-data/color-tables.json", encoding="utf8"
+) as json_file:
+    COLORTABLES = json.load(json_file)
 
 app = dash.Dash(__name__)
 
 app.layout = html.Div(
-    style={"height": "800px"},
+    style={"height": "95vh"},
     children=[
         webviz_subsurface_components.WellLogViewer(
-            id="well_completions", welllog=logs, template=template
+            id="well_completions",
+            welllog=LOGS,
+            template=TEMPLATE,
+            colorTables=COLORTABLES,
         ),
     ],
 )

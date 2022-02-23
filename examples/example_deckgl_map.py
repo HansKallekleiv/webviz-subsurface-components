@@ -8,86 +8,13 @@ import io
 import base64
 import copy
 import re
+import json
+from dash import Dash, html, Input, Output, State, callback, dcc
 
-from dash import Dash, html, Input, Output, State, callback
-import jsonpatch
-import jsonpointer
 import numpy as np
 from PIL import Image
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
-
-# Helper class for dealing with map patches.
-class MapSpec:
-    # Initialize the class from a base spec + a patch that is applied to the base spec.
-    def __init__(self, initialSpec=None, initialPatch=None):
-        self._spec = initialSpec
-        if initialPatch:
-            self.apply_patch(initialPatch)
-
-    def get_spec(self):
-        return self._spec
-
-    def get_spec_clone(self):
-        return copy.deepcopy(self._spec)
-
-    # Update the current spec to a new spec and return the diff patch between them.
-    # If new_spec is a callable, call it with the current spec and diff the current spec
-    # against the returned value.
-    def update(self, new_spec):
-        updated_spec = new_spec
-        if callable(new_spec):
-            updated_spec = new_spec(self.get_spec_clone())
-
-        patch = jsonpatch.make_patch(self._spec, updated_spec).patch
-
-        self._spec = updated_spec
-        return patch
-
-    # Create and return a patch by diffing the current spec and the provided new_spec.
-    # If new_spec is a callable, call it with the current spec and diff the current spec
-    # against the returned value.
-    # This is usually used to make some modifications to the received map spec
-    # and send those modifications back to the frontend as a patch.
-    def create_patch(self, new_spec=None):
-        if new_spec is None:
-            return jsonpatch.make_patch(None, self._spec).patch
-
-        comp_with = new_spec
-        if callable(new_spec):
-            comp_with = new_spec(self.get_spec_clone())
-
-        return jsonpatch.make_patch(self._spec, comp_with).patch
-
-    def apply_patch(self, patch):
-        jsonpatch.apply_patch(self._spec, self.normalize_patch(patch), True)
-
-    # The path looks something like this: `/layers/[layer-id]/property`,
-    # where `[layer-id]` is the id of an object in the `layers` array.
-    # This function will replace all object ids with their indices in the array,
-    # resulting in a path that would look like this: `/layers/2/property`,
-    # which is a valid json pointer that can be used by json patch.
-    def normalize_patch(self, in_patch, inplace=False):
-        def replace_path_id(matched):
-            parent = matched.group(1)
-            obj_id = matched.group(2)
-            parent_array = jsonpointer.resolve_pointer(self._spec, parent)
-            matched_id = -1
-            for (i, elem) in enumerate(parent_array):
-                if elem["id"] == obj_id:
-                    matched_id = i
-                    break
-            if matched_id < 0:
-                raise f"Id {obj_id} not found"
-            return f"{parent}/{matched_id}"
-
-        out_patch = in_patch if inplace else copy.deepcopy(in_patch)
-        for patch in out_patch:
-            patch["path"] = re.sub(
-                r"([\w\/-]*)\/\[([\w-]+)\]", replace_path_id, patch["path"]
-            )
-
-        return out_patch
 
 
 def array2d_to_png(z_array):
@@ -136,19 +63,10 @@ if __name__ == "__main__":
     # Volve Licence partners under CC BY-NC-SA 4.0 license, and only
     # used here as an example data set.
     # https://creativecommons.org/licenses/by-nc-sa/4.0/
-    map_data = np.loadtxt("examples/example-data/layered-map-data.npz.gz")
 
-    min_value = np.nanmin(map_data)
-    max_value = np.nanmax(map_data)
+    min_value = 2782.08203125
+    max_value = 3513.704345703125
 
-    # Shift the values to start from 0 and scale them to cover
-    # the whole RGB range for increased precision.
-    # The client will need to reverse this operation.
-    scale_factor = (256 * 256 * 256 - 1) / (max_value - min_value)
-    map_data = (map_data - min_value) * scale_factor
-
-    map_data = array2d_to_png(map_data)
-    COLOR_MAP = "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster/assets/colormaps/plasma.png"
     WELLS = (
         "https://raw.githubusercontent.com/equinor/webviz-subsurface-components/"
         "master/react/src/demo/example-data/volve_wells.json"
@@ -157,44 +75,61 @@ if __name__ == "__main__":
         "https://raw.githubusercontent.com/equinor/webviz-subsurface-components/"
         "master/react/src/demo/example-data/volve_logs.json"
     )
+    with open(
+        "./react/src/demo/example-data/L898MUD.json", encoding="utf8"
+    ) as json_file:
+        LOGS2 = json.load(json_file)
+
+    with open(
+        "./react/src/demo/example-data/welllog_template_1.json", encoding="utf8"
+    ) as json_file:
+        TEMPLATE = json.load(json_file)
+
+    with open(
+        "./react/src/demo/example-data/color-tables.json", encoding="utf8"
+    ) as json_file:
+        COLORTABLES = json.load(json_file)
 
     bounds = [432205, 6475078, 437720, 6481113]  # left, bottom, right, top
 
     map_obj = wsc.DeckGLMap(
         id="deckgl-map",
-        resources={
-            "propertyMap": map_data,
-        },
         coords={"visible": True, "multiPicking": True, "pickDepth": 10},
         scale={"visible": True},
         coordinateUnit="m",
         bounds=bounds,
         layers=[
             {
-                "@@type": "ColormapLayer",
-                "image": "@@#resources.propertyMap",
-                "bounds": bounds,
-                "colormap": COLOR_MAP,
-                "valueRange": [min_value, max_value],
-            },
-            {
-                "@@type": "Hillshading2DLayer",
-                "bounds": bounds,
-                "valueRange": [min_value, max_value],
-                "image": "@@#resources.propertyMap",
-            },
-            {
-                "@@type": "DrawingLayer",
-                "data": "@@#editedData.data",
-                "selectedDrawingFeature": "@@#editedData.selectedDrawingFeature",
+                "@@type": "Map3DLayer",
+                "mesh": "https://raw.githubusercontent.com/equinor/webviz-subsurface-components/master/react/src/demo/example-data/depthMap.png",
+                "bounds": [432205, 6475078, 437720, 6481113],
+                "meshMaxError": 2.0,
+                "propertyTexture": "https://raw.githubusercontent.com/equinor/webviz-subsurface-components/master/react/src/demo/example-data/propertyMap.png",
+                "rotDeg": 0,
+                "contours": [3000, 10.0],
+                "colorMapName": "Physics",
+                "valueRange": [2782, 3513],
+                "colorMapRange": [2782, 3513],
             },
             {
                 "@@type": "WellsLayer",
                 "data": WELLS,
+                "refine": False,
                 "logData": LOGS,
                 "logrunName": "BLOCKING",
                 "logName": "ZONELOG",
+                "logColor": "Stratigraphy",
                 "selectedWell": "@@#editedData.selectedWell",
+                "pickable": False,
+            },
+            {
+                "@@type": "GridLayer",
+                "id": "grid-layer",
+                "data": "https://raw.githubusercontent.com/equinor/webviz-subsurface-components/master/react/src/demo/example-data/grid_layer.json",
+                "colorMapName": "Rainbow",
+                "valueRange": [0, 1],
+                "colorMapRange": [0, 1],
+                "visible": False,
             },
         ],
         editedData={
@@ -202,91 +137,263 @@ if __name__ == "__main__":
             "selectedDrawingFeature": [],
             "data": {"type": "FeatureCollection", "features": []},
         },
-    )
-
-    colormap_dropdown = wcc.Dropdown(
-        label="Colormap",
-        id="colormap-select",
-        options=[
-            {
-                "label": "Black & White",
-                "value": "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster@0.3.1/assets/"
-                "colormaps/binary_r.png",
-            },
-            {
-                "label": "Plasma",
-                "value": "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster@0.3.1/assets/"
-                "colormaps/plasma.png",
-            },
-            {
-                "label": "Seismic",
-                "value": "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster@0.3.1/assets/"
-                "colormaps/seismic.png",
-            },
-            {
-                "label": "Spectral",
-                "value": "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster@0.3.1/assets/"
-                "colormaps/spectral.png",
-            },
-            {
-                "label": "Terrain",
-                "value": "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster@0.3.1/assets/"
-                "colormaps/terrain.png",
-            },
-            {
-                "label": "Viridis",
-                "value": "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster@0.3.1/assets/"
-                "colormaps/viridis.png",
-            },
-        ],
-        value="https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster@0.3.1/assets/"
-        "colormaps/plasma.png",
-        clearable=False,
+        views={
+            "layout": [1, 1],
+            "viewports": [{"id": "view_1", "show3D": False, "layerIds": []}],
+        },
     )
 
     app = Dash(__name__)
 
     app.layout = wcc.FlexBox(
+        style={"marginRight": "0px", "width": "100vw"},
         children=[
             wcc.Frame(
                 style={
                     "flex": 1,
                 },
                 children=[
-                    colormap_dropdown,
-                    html.Img(
-                        id="colormap-img",
+                    wcc.Selectors(
+                        label="Visualizations",
+                        children=[
+                            dcc.Checklist(
+                                id="vis_select",
+                                options=[
+                                    {
+                                        "label": "Map",
+                                        "value": "map",
+                                    },
+                                    {
+                                        "label": "Well log",
+                                        "value": "well_log",
+                                    },
+                                ],
+                                value=["map"],
+                            )
+                        ],
+                    ),
+                    wcc.Selectors(
+                        label="Map settings",
+                        open_details=False,
+                        children=[
+                            wcc.Selectors(
+                                label="Colormap",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Palette",
+                                        id="colormap-select",
+                                        options=[
+                                            {
+                                                "label": color,
+                                                "value": color,
+                                            }
+                                            for color in [
+                                                "Physics",
+                                                "Rainbow",
+                                                "Porosity",
+                                                "Permeability",
+                                                "Seismic BlueWhiteRed",
+                                                "Time/Depth",
+                                                "Stratigraphy",
+                                                "Facies",
+                                                "Gas-Oil-Water",
+                                                "Gas-Water",
+                                                "Oil-Water",
+                                                "Accent",
+                                            ]
+                                        ],
+                                        value="Physics",
+                                        clearable=False,
+                                    ),
+                                    wcc.RangeSlider(
+                                        label="Value range",
+                                        id="colormap-range",
+                                        min=2782,
+                                        max=3513,
+                                        step=1,
+                                        value=[2782, 3513],
+                                        updatemode="drag",
+                                        tooltip={
+                                            "placement": "bottom",
+                                            "always_visible": True,
+                                        },
+                                    ),
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Viewmode",
+                                children=[
+                                    wcc.RadioItems(
+                                        id="viewmode",
+                                        options=[
+                                            {"label": "2D view", "value": "2d"},
+                                            {"label": "3d view", "value": "3d"},
+                                        ],
+                                        value="2d",
+                                    )
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Contours",
+                                children=[
+                                    html.Div(
+                                        style={"marginBottom": "10px"},
+                                        children=[
+                                            wcc.Label(
+                                                children="Contour reference point"
+                                            ),
+                                            dcc.Input(
+                                                id="contour-reference",
+                                                # style={"width": "5vw"},
+                                                debounce=True,
+                                                value=3000.0,
+                                            ),
+                                        ],
+                                    ),
+                                    html.Div(
+                                        style={"marginBottom": "10px"},
+                                        children=[
+                                            wcc.Label(children="Contour increment"),
+                                            wcc.Slider(
+                                                id="contour-slider",
+                                                min=1.0,
+                                                max=200.0,
+                                                step=1,
+                                                value=25.0,
+                                                updatemode="drag",
+                                                tooltip={
+                                                    "placement": "bottom",
+                                                    "always_visible": True,
+                                                },
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    wcc.Selectors(
+                        label="Log settings",
+                        open_details=False,
+                        children=[
+                            wcc.Dropdown(
+                                label="Log",
+                                id="log-select",
+                                options=[
+                                    {
+                                        "label": log,
+                                        "value": log,
+                                    }
+                                    for log in [
+                                        "ZONELOG",
+                                        "PORO_TOT",
+                                        "NTG",
+                                        "PERM_TOT",
+                                        "FACIES",
+                                    ]
+                                ],
+                                value="ZONELOG",
+                                clearable=False,
+                            ),
+                            wcc.Dropdown(
+                                label="Color Palette",
+                                id="log-colormap-select",
+                                options=[
+                                    {
+                                        "label": color,
+                                        "value": color,
+                                    }
+                                    for color in [
+                                        "Physics",
+                                        "Rainbow",
+                                        "Porosity",
+                                        "Permeability",
+                                        "Seismic BlueWhiteRed",
+                                        "Time/Depth",
+                                        "Stratigraphy",
+                                        "Facies",
+                                        "Gas-Oil-Water",
+                                        "Gas-Water",
+                                        "Oil-Water",
+                                        "Accent",
+                                    ]
+                                ],
+                                value="Stratigraphy",
+                                clearable=False,
+                            ),
+                        ],
                     ),
                 ],
             ),
             wcc.Frame(
-                style={"flex": 10, "height": "90vh"},
-                children=[map_obj],
+                id="map_wrapper",
+                style={"flex": 5, "height": "90vh"},
+                children=[map_obj, html.Div(id="out")],
             ),
-        ]
+            wcc.Frame(
+                id="log_wrapper",
+                style={"flex": 5, "height": "90vh", "display": "none"},
+                children=[
+                    wsc.WellLogViewer(
+                        id="well_completions",
+                        welllog=LOGS2,
+                        template=TEMPLATE,
+                        colorTables=COLORTABLES,
+                        readoutOptions={"allTracks": True},
+                    ),
+                ],
+            ),
+        ],
     )
-
-    @callback(
-        Output("colormap-img", "src"),
-        Input("colormap-select", "value"),
-    )
-    def update_img(value):
-        return value
 
     @callback(
         Output("deckgl-map", "layers"),
         Input("colormap-select", "value"),
+        Input("colormap-range", "value"),
+        Input("contour-reference", "value"),
+        Input("contour-slider", "value"),
+        Input("log-select", "value"),
+        Input("log-colormap-select", "value"),
         State("deckgl-map", "layers"),
     )
-    def _update_layers(colormap, deckgl_layers):
-        if not colormap:
-            return None
+    def _update_layers(
+        colormap,
+        color_range,
+        contour_ref,
+        contour_inc,
+        log_name,
+        log_colormap,
+        deckgl_layers,
+    ):
 
-        def apply_colormap(layers):
-            # Update the colormap layer then return the updated layers.
-            layers[0]["colormap"] = colormap
-            return layers
+        deckgl_layers[0]["colorMapName"] = colormap
+        deckgl_layers[0]["colorMapRange"] = color_range
+        deckgl_layers[0]["contours"] = [contour_ref, contour_inc]
+        deckgl_layers[1]["logName"] = log_name
+        deckgl_layers[1]["logColor"] = log_colormap
+        return deckgl_layers
 
-        return apply_colormap(deckgl_layers)
+    @callback(
+        Output("deckgl-map", "views"),
+        Input("viewmode", "value"),
+        State("deckgl-map", "views"),
+    )
+    def _update_layers(viewmode, views):
 
-    app.run_server(debug=True)
+        views["viewports"][0]["show3D"] = True if viewmode == "3d" else False
+        return views
+
+    @callback(
+        Output("map_wrapper", "style"),
+        Output("log_wrapper", "style"),
+        Input("vis_select", "value"),
+        State("map_wrapper", "style"),
+        State("log_wrapper", "style"),
+    )
+    def _update_layers(vis, map_style, log_style):
+
+        map_style["display"] = "inline" if "map" in vis else "none"
+        log_style["display"] = "inline" if "well_log" in vis else "none"
+        return map_style, log_style
+
+    app.run_server(debug=False)
