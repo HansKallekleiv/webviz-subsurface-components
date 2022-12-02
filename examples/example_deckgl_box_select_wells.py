@@ -34,18 +34,6 @@ app.layout = dash.html.Div(
             bounds=[456150, 5925800, 467400, 5939500],
             layers=[
                 {
-                    "@@type": "WellsLayer",
-                    "id": "wells-layer",
-                    "data": "/wells/wells.json",
-                    "refine": False,
-                },
-                {
-                    "@@type": "FaultPolygonsLayer",
-                    "id": "fault-layer",
-                    "data": "/faults/faults.json",
-                    "refine": False,
-                },
-                {
                     "@@type": "LassoLayer",
                     "visible": True,
                     "pickable": True,
