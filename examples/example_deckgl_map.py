@@ -1,3 +1,4 @@
+from flask import send_file
 import numpy as np
 import xtgeo
 import dash
@@ -103,9 +104,13 @@ app.layout = wsc.DeckGLMap(
 @app.server.route("/map/<map_name>")
 def send_map(map_name: str):
     if map_name == "mesh":
-        return get_surface_float32(depth_surface)
+        return send_file(
+            get_surface_float32(depth_surface), mimetype="application/octet-stream"
+        )
     if map_name == "property":
-        return get_surface_float32(property_surface)
+        return send_file(
+            get_surface_float32(property_surface), mimetype="application/octet-stream"
+        )
 
 
 @app.server.route("/faults/faults.json")

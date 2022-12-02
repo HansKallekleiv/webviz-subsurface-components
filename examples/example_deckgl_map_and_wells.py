@@ -2,6 +2,7 @@ import glob
 
 import numpy as np
 import xtgeo
+from flask import send_file
 import dash
 import webviz_subsurface_components as wsc
 
@@ -95,7 +96,9 @@ app.layout = wsc.DeckGLMap(
 @app.server.route("/map/<map_name>")
 def send_map(map_name: str):
     if map_name == "mesh":
-        return get_surface_float32(depth_surface)
+        return send_file(
+            get_surface_float32(depth_surface), mimetype="application/octet-stream"
+        )
 
 
 @app.server.route("/wells/wells.json")
