@@ -3,7 +3,9 @@ import xtgeo
 import flask
 
 
-def xtgeo_polygons_to_geojson(polygons: xtgeo.Polygons, xy_only: bool = False) -> str:
+def xtgeo_polygons_to_geojson(
+    polygons: xtgeo.Polygons, xy_only: bool = False
+) -> geojson.FeatureCollection:
     validate_geometry = True
     feature_arr = []
     for poly_id, poly_df in polygons.dataframe.groupby("POLY_ID"):
@@ -27,16 +29,12 @@ def xtgeo_polygons_to_geojson(polygons: xtgeo.Polygons, xy_only: bool = False) -
         feature_arr.append(feature)
 
     featurecoll = geojson.FeatureCollection(features=feature_arr)
-    response = flask.Response(
-        geojson.dumps(featurecoll), mimetype="application/geo+json"
-    )
-
-    return response
+    return featurecoll
 
 
 def xtgeo_polygons_to_polylines_geojson(
     polygons: xtgeo.Polygons, xy_only: bool = False
-) -> str:
+) -> geojson.FeatureCollection:
     validate_geometry = True
     feature_arr = []
     for poly_id, poly_df in polygons.dataframe.groupby("POLY_ID"):
@@ -60,8 +58,4 @@ def xtgeo_polygons_to_polylines_geojson(
         feature_arr.append(feature)
 
     featurecoll = geojson.FeatureCollection(features=feature_arr)
-    response = flask.Response(
-        geojson.dumps(featurecoll), mimetype="application/geo+json"
-    )
-
-    return response
+    return featurecoll

@@ -1,5 +1,7 @@
 import glob
 
+import flask
+import geojson
 import numpy as np
 import xtgeo
 from flask import send_file
@@ -103,12 +105,14 @@ def send_map(map_name: str):
 
 @app.server.route("/wells/wells.json")
 def send_wells():
-    return xtgeo_wells_to_geojson(wells)
+    featurecol = xtgeo_wells_to_geojson(wells)
+    return flask.Response(geojson.dumps(featurecol), mimetype="application/geo+json")
 
 
 @app.server.route("/faults/faults.json")
 def send_faults():
-    return xtgeo_polygons_to_polylines_geojson(polygons)
+    featurecol = xtgeo_polygons_to_polylines_geojson(polygons)
+    return flask.Response(geojson.dumps(featurecol), mimetype="application/geo+json")
 
 
 if __name__ == "__main__":

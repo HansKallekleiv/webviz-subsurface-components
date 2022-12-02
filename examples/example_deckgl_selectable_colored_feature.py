@@ -1,5 +1,7 @@
 import glob
 
+import flask
+import geojson
 import numpy as np
 import xtgeo
 import dash
@@ -71,7 +73,8 @@ def display_selected_fault(edited_data):
 
 @app.server.route("/faults/faults.json")
 def send_faults():
-    return xtgeo_polygons_to_geojson(polygons, xy_only=True)
+    featurecol = xtgeo_polygons_to_geojson(polygons, xy_only=True)
+    return flask.Response(geojson.dumps(featurecol), mimetype="application/geo+json")
 
 
 if __name__ == "__main__":

@@ -29,8 +29,4 @@ def xtgeo_wells_to_geojson(wells: xtgeo.Wells) -> str:
         feature_arr.append(feature)
 
     featurecoll = geojson.FeatureCollection(features=feature_arr)
-    response = flask.Response(
-        geojson.dumps(featurecoll), mimetype="application/geo+json"
-    )
-
-    return response
+    return featurecoll
